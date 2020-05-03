@@ -31,21 +31,26 @@ def unproject(u, v, d, fx, fy, cx, cy, return_np=True):
     x = (u - cx) * d / fx
     y = (v - cy) * d / fy
     if type(x) in [float, np.float64, np.float32]:
+        # for scalar
         if return_np:
             return np.array([x, y, d])
         else:
             return [x, y, d]
+    elif type(x) is np.ndarray and x.dtype in [np.float64, np.float32]:
+        # for tensor
+        return np.stack([x, y, d], axis=-1)
     else:
-        # TODO: for tensor
         raise NotImplementedError(type(x))
 
 
 # TODO: faster version by tensor operation
 def depth2pc_naive(depth, fx, fy, cx, cy, color=None, ignore_zero=True,
-                   return_np=True, distortion_type=None, distortion_param=[]):
+                   distortion_type=None, distortion_param=[],
+                   distortion_interp='NN'):
     if depth.ndim != 2:
         raise ValueError()
     with_color = color is not None
+    with_distortion = distortion_type is not None
     pc = []
     pc_color = []
     h, w = depth.shape
@@ -54,18 +59,77 @@ def depth2pc_naive(depth, fx, fy, cx, cy, color=None, ignore_zero=True,
             d = depth[v, u]
             if ignore_zero and d <= 0:
                 continue
-            if distortion_type is not None:
+            if with_distortion:
                 u, v = undistort_pixel(u, v, distortion_type, distortion_param)
-            p = unproject(u, v, d, fx, fy, cx, cy, return_np)
+            p = unproject(u, v, d, fx, fy, cx, cy, True)
             pc.append(p)
             if with_color:
-                # TODO: interpolation for float uv by undistort_pixel
+                # interpolation for float uv by undistort_pixel
+                if with_distortion and distortion_interp == 'NN':
+                    v, u = np.rint(v), np.rint(u)
+                elif with_distortion:
+                    raise NotImplementedError('distortion_interp ' +
+                                              distortion_interp +
+                                              ' is not implemented')
+                if v < 0:
+                    v = 0
+                elif h - 1 < v:
+                    v = h - 1
+                if u < 0:
+                    u = 0
+                elif w - 1 < u:
+                    u = w - 1
                 pc_color.append(color[v, u])
-    if return_np:
-        pc = np.array(pc)
-        if with_color:
-            pc_color = np.array(pc_color)
+
+    pc = np.array(pc)
+    if with_color:
+        pc_color = np.array(pc_color)
     return pc, pc_color
+
+
+def depth2pc(depth, fx, fy, cx, cy, color=None, ignore_zero=True,
+             keep_image_coord=True,
+             distortion_type=None, distortion_param=[],
+             distortion_interp='NN'):
+    if depth.ndim != 2:
+        raise ValueError()
+    with_color = color is not None
+    with_distortion = distortion_type is not None
+    if ignore_zero:
+        valid_mask = depth > 0
+    else:
+        valid_mask = np.ones(depth.shape, dtype=np.bool)
+    invalid_mask = np.logical_not(valid_mask)
+    h, w = depth.shape
+    u = np.tile(np.arange(w), (h, 1))
+    v = np.tile(np.arange(h), (w, 1)).T
+    if with_distortion:
+        u, v = undistort_pixel(u, v, distortion_type, distortion_param)
+    pc = unproject(u, v, depth, fx, fy, cx, cy, True)
+    pc[invalid_mask] = 0
+
+    pc_color = None
+    if with_color:
+        # interpolation for float uv by undistort_pixel
+        if with_distortion and distortion_interp == 'NN':
+            v, u = np.rint(v), np.rint(u)
+        elif with_distortion:
+            raise NotImplementedError('distortion_interp ' +
+                                      distortion_interp +
+                                      ' is not implemented')
+        v[v < 0] = 0
+        v[(h - 1) < v] = h - 1
+        u[u < 0] = 0
+        u[(w - 1) < u] = w - 1
+        pc_color = color[v, u]
+        pc_color[invalid_mask] = 0
+
+    # return as organized point cloud keeping original image shape
+    if keep_image_coord:
+        return pc, pc_color
+
+    # return as a set of points
+    return pc[valid_mask], pc_color[valid_mask]
 
 
 def make_ply_txt(pc, color, normal):

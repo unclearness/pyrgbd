@@ -2,6 +2,7 @@ import cv2
 import numpy as np 
 import sys
 import os
+import time
 sys.path.append(os.path.abspath('.'))
 import pyrgbd
 
@@ -14,5 +15,21 @@ if __name__ == '__main__':
     depth /= 5000.0  # resolve TUM depth scale and convert to meter scale
     # intrinsics of Freiburg 3 RGB
     fx, fy, cx, cy = 535.4, 539.2, 320.1, 247.6
+    start = time.time()
+    pc, pc_color = pyrgbd.depth2pc(depth, fx, fy, cx, cy, color,
+                                   keep_image_coord=False)
+    end = time.time()
+    print('depth2pc', end - start)
+
+    '''
+    # slow implementation
+    start = time.time()
     pc, pc_color = pyrgbd.depth2pc_naive(depth, fx, fy, cx, cy, color)
+    end = time.time()
+    print('depth2pc_naive', end - start)
+    '''
+
+    start = time.time()
     pyrgbd.util.write_pc_ply_txt('pc.ply', pc, pc_color)
+    end = time.time()
+    print('write_pc_ply_txt', end - start)
