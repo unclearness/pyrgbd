@@ -35,7 +35,7 @@ def parse_camera_params(kinect):
 
     d_T = np.array(kinect['M_depth'])
     c_T = np.array(kinect['M_color'])
-    # "d_T @" is important... 
+    # "d_T @" is important...
     c2d_T = d_T @ c_T
     d2c_T = np.linalg.inv(c2d_T)
 
@@ -43,7 +43,7 @@ def parse_camera_params(kinect):
     param['d2c_t'] = d2c_T[0:3, 3]
 
     # world to depth
-    # "d_T @" is important... 
+    # "d_T @" is important...
     w2d_T = d_T @  np.array(kinect['M_world2sensor'])
     d2w_T = np.linalg.inv(w2d_T)
     param['w2d_R'] = w2d_T[0:3, 0:3]
@@ -60,11 +60,11 @@ def parse_camera_params(kinect):
 if __name__ == '__main__':
     data_dir = './data/cmu_panoptic/171026_cello3/'
     kinect_params = load_json(os.path.join(data_dir,
-                              'kcalibration_171026_cello3.json'))
+                                           'kcalibration_171026_cello3.json'))
     KINECT_NUM = 10
     global_pc = []
     global_pc_color = []
-    
+
     volume = o3d.integration.ScalableTSDFVolume(
         voxel_length=4.0 / 512.0,
         sdf_trunc=0.05,
@@ -113,7 +113,7 @@ if __name__ == '__main__':
         global_pc_color += pc_color.tolist()
 
         # BGR to RGB
-        # copy() for C-style memory allocation
+        # copy() for C-style memory allocation after fancy indexing
         mapped_color_rgb = mapped_color[..., [2, 1, 0]].copy()
         o3d_color = o3d.geometry.Image(mapped_color_rgb)
         # to float32

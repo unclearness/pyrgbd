@@ -10,7 +10,7 @@ def _undistort_pixel_opencv(u, v, fx, fy, cx, cy, k1, k2, p1, p2,
     u2 = u1 ** 2
     v2 = v1 ** 2
     r2 = u2 + v2
-    
+
     _2uv = 2 * u1 * v1
     kr = (1 + ((k3*r2 + k2)*r2 + k1)*r2)/(1 + ((k6*r2 + k5)*r2 + k4)*r2)
     u_ = fx*(u1 * kr + p1 * _2uv + p2 * (r2+2*u2)) + cx
@@ -22,7 +22,8 @@ def _undistort_pixel_opencv(u, v, fx, fy, cx, cy, k1, k2, p1, p2,
 def undistort_pixel(u, v, fx, fy, cx, cy, distortion_type, distortion_param):
     if distortion_type == "OPENCV" and 4 <= len(distortion_param) <= 8:
         # k1, k2, p1, p2 = distortion_param
-        return _undistort_pixel_opencv(u, v, fx, fy, cx, cy, *tuple(distortion_param))
+        return _undistort_pixel_opencv(u, v, fx, fy,
+                                       cx, cy, *tuple(distortion_param))
     raise NotImplementedError(
         distortion_type + " with param " + distortion_param
         + " is not implemented")

@@ -15,18 +15,18 @@ if __name__ == '__main__':
     depth /= 5000.0  # resolve TUM depth scale and convert to meter scale
     # intrinsics of Freiburg 3 RGB
     fx, fy, cx, cy = 535.4, 539.2, 320.1, 247.6
-    start = time.time()
+    start_t = time.time()
     pc, pc_color = pyrgbd.depth2pc(depth, fx, fy, cx, cy, color,
                                    keep_image_coord=False)
-    end = time.time()
-    print('depth2pc', end - start)
+    end_t = time.time()
+    print('depth2pc', end_t - start_t)
 
     '''
     # slow implementation
-    start = time.time()
+    start_t = time.time()
     pc, pc_color = pyrgbd.depth2pc_naive(depth, fx, fy, cx, cy, color)
-    end = time.time()
-    print('depth2pc_naive', end - start)
+    end_t = time.time()
+    print('depth2pc_naive', end_t - start_t)
     '''
 
     start = time.time()
