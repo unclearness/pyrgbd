@@ -17,10 +17,7 @@ def gen_mapped_color(depth, dfx, dfy, dcx, dcy,
     dpc = dpc[valid_mask]
     # point cloud in color camera coordinate
     cpc = (d2c_R @ dpc.T).T + d2c_t
-    after_R = (d2c_R @ dpc.T).T
-    after_t = after_R + d2c_t
-    print(after_R[100], after_t[100], d2c_R, d2c_t)
-    # cpc = np.dot(d2c_R, dpc) + d2c_t
+
     # project to color camera coordinate
     img_p = pyrgbd.project(cpc[..., 0], cpc[..., 1], cpc[..., 2],
                            cfx, cfy, ccx, ccy, with_depth=False)

@@ -19,7 +19,7 @@ def parse_camera_params(kinect):
     param['depth']['cx'] = kinect['K_depth'][0][2]
     param['depth']['cy'] = kinect['K_depth'][1][2]
     # ignore distCoeffs_depth's 5th (1000) and 6th (0) element
-    # since it looks strange
+    # since they are strange
     param['depth']['distCoeffs'] = np.array(kinect['distCoeffs_depth'][:5])
 
     param['color'] = {}
@@ -28,14 +28,14 @@ def parse_camera_params(kinect):
     param['color']['cx'] = kinect['K_color'][0][2]
     param['color']['cy'] = kinect['K_color'][1][2]
     # ignore distCoeffs_color's 5th (1000) and 6th (0) element
-    # since it looks strange
+    # since they are strange
     param['color']['distCoeffs'] = np.array(kinect['distCoeffs_color'][:5])
 
     d_T = np.array(kinect['M_depth'])
     c_T = np.array(kinect['M_color'])
     d2c_T = d_T @ c_T
     d2c_T = np.linalg.inv(d2c_T)
-    
+
     param['d2c_R'] = d2c_T[0:3, 0:3]
     param['d2c_t'] = d2c_T[0:3, 3]
 
@@ -76,6 +76,5 @@ if __name__ == '__main__':
         viz_depth[viz_depth > 1.0] = 1.0
         viz_depth = (viz_depth * 255).astype(np.uint8)
         viz_depth = np.stack([viz_depth, viz_depth, viz_depth], axis=-1)
-        print(viz_depth.shape, mapped_color.shape)
         mapped_color_with_depth = cv2.addWeighted(mapped_color, 0.3, viz_depth, 0.7, 0)
         cv2.imwrite('mapped_with_depth_{:05d}.png'.format(i), mapped_color_with_depth)
