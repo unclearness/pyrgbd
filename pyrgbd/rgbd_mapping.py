@@ -8,7 +8,8 @@ def gen_mapped_color(depth, dfx, dfy, dcx, dcy,
                      d2c_R, d2c_t,
                      ddist_type=None, ddist_param=[],
                      cdist_type=None, cdist_param=[],
-                     cdist_interp='NN'):
+                     cdist_interp='NN',
+                     missing_color=[0, 0, 0]):
     # point cloud in depth camera coordinate
     dpc, _ = pyrgbd.depth2pc(depth, dfx, dfy, dcx, dcy,
                              distortion_type=ddist_type,
@@ -48,6 +49,7 @@ def gen_mapped_color(depth, dfx, dfy, dcx, dcy,
     pc_color = color[v, u]
 
     mapped_color = np.zeros([dh, dw, cc], np.uint8)
+    mapped_color[..., :] = missing_color
 
     mapped_color[valid_mask] = pc_color
 
