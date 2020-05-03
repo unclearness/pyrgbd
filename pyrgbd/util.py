@@ -11,6 +11,7 @@ def _undistort_pixel_opencv(u, v, fx, fy, cx, cy, k1, k2, p1, p2,
     v2 = v1 ** 2
     r2 = u2 + v2
 
+    # https://github.com/egonSchiele/OpenCV/blob/master/modules/imgproc/src/undistort.cpp#L133
     _2uv = 2 * u1 * v1
     kr = (1 + ((k3*r2 + k2)*r2 + k1)*r2)/(1 + ((k6*r2 + k5)*r2 + k4)*r2)
     u_ = fx*(u1 * kr + p1 * _2uv + p2 * (r2+2*u2)) + cx

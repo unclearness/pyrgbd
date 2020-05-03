@@ -105,7 +105,8 @@ if __name__ == '__main__':
             depth, dfx, dfy, dcx, dcy, mapped_color, keep_image_coord=False)
         pc_color = pc_color[:, [2, 1, 0]]  # BGR to RGB
 
-        # TODO: coordinate transform is not working
+        # Merge Multiple Kinects into world_kinect coordinate (1st Kinect's coordinate)
+        # TODO: Merge Multiple Kinects into panoptic_kinect coordinate
         pc = (param['d2w_R'] @ pc.T).T + param['d2w_t']
 
         pyrgbd.write_pc_ply_txt('pc_{:05d}.ply'.format(i), pc, pc_color)
@@ -118,6 +119,7 @@ if __name__ == '__main__':
         o3d_color = o3d.geometry.Image(mapped_color_rgb)
         # to float32
         o3d_depth = o3d.geometry.Image(depth.astype(np.float32))
+        # TODO: Consider distortion
         rgbd = o3d.geometry.RGBDImage.create_from_color_and_depth(
             o3d_color, o3d_depth, depth_trunc=4.0, depth_scale=1.0,
             convert_rgb_to_intensity=False)
