@@ -4,24 +4,25 @@ import numpy as np
 # https://docs.opencv.org/4.3.0/d9/d0c/group__calib3d.html
 def _undistort_pixel_opencv(u, v, fx, fy, cx, cy, k1, k2, p1, p2,
                             k3=0.0, k4=0.0, k5=0.0, k6=0.0):
-    u1 = u - cx
-    v1 = v - cy
+
+    u1 = (u - cx) / fx
+    v1 = (v - cy) / fy
     u2 = u1 ** 2
     v2 = v1 ** 2
     r2 = u2 + v2
-    r4 = r2 ** 2
-    r6 = r2 ** 3
-    radial_factor = (1.0 + k1 * r2 + k2 * r4 + k3 * r6) / \
-        (1.0 + k4 * r2 + k5 * r4 + k6 * r6)
-    u_ = u * radial_factor + 2 * p1 * u1 * v1 + p2 * (r2+2*u2)
-    v_ = v * radial_factor + p1 * (r2 + 2*v2) + 2 * p2 * u1 * v1
+    
+    _2uv = 2 * u1 * v1
+    kr = (1 + ((k3*r2 + k2)*r2 + k1)*r2)/(1 + ((k6*r2 + k5)*r2 + k4)*r2)
+    u_ = fx*(u1 * kr + p1 * _2uv + p2 * (r2+2*u2)) + cx
+    v_ = fy*(v1 * kr + p1 * (r2 + 2*v2) + p2 * _2uv) + cy
+    
     return u_, v_
 
 
 def undistort_pixel(u, v, fx, fy, cx, cy, distortion_type, distortion_param):
-    if distortion_type == "OPENCV" and len(distortion_param) == 4:
-        k1, k2, p1, p2 = distortion_param
-        return _undistort_pixel_opencv(u, v, fx, fy, cx, cy, k1, k2, p1, p2)
+    if distortion_type == "OPENCV" and 4 <= len(distortion_param) <= 8:
+        # k1, k2, p1, p2 = distortion_param
+        return _undistort_pixel_opencv(u, v, fx, fy, cx, cy, *tuple(distortion_param))
     raise NotImplementedError(
         distortion_type + " with param " + distortion_param
         + " is not implemented")
@@ -104,7 +105,8 @@ def depth2pc(depth, fx, fy, cx, cy, color=None, ignore_zero=True,
     u = np.tile(np.arange(w), (h, 1))
     v = np.tile(np.arange(h), (w, 1)).T
     if with_distortion:
-        u, v = undistort_pixel(u, v, distortion_type, distortion_param)
+        u, v = undistort_pixel(u, v, fx, fy, cx, cy,
+                               distortion_type, distortion_param)
     pc = unproject(u, v, depth, fx, fy, cx, cy)
     pc[invalid_mask] = 0
 

@@ -16,18 +16,24 @@ def gen_mapped_color(depth, dfx, dfy, dcx, dcy,
     valid_mask = dpc[..., 2] > 0
     dpc = dpc[valid_mask]
     # point cloud in color camera coordinate
-    cpc = d2c_R.dot(dpc) + d2c_t
+    cpc = (d2c_R @ dpc.T).T + d2c_t
+    after_R = (d2c_R @ dpc.T).T
+    after_t = after_R + d2c_t
+    print(after_R[100], after_t[100], d2c_R, d2c_t)
+    # cpc = np.dot(d2c_R, dpc) + d2c_t
     # project to color camera coordinate
-    img_p = pyrgbd.project(cpc, cfx, cfy, ccx, ccy, with_depth=False)
+    img_p = pyrgbd.project(cpc[..., 0], cpc[..., 1], cpc[..., 2],
+                           cfx, cfy, ccx, ccy, with_depth=False)
     u, v = img_p[..., 0], img_p[..., 1]
 
     with_cdist = cdist_type is not None
     if with_cdist:
-        u, v = pyrgbd.undistort_pixel(u, v, cdist_type, cdist_param)
+        u, v = pyrgbd.undistort_pixel(u, v, cfx, cfy, ccx, ccy,
+                                      cdist_type, cdist_param)
 
     # interpolation for float uv by undistort_pixel
     if with_cdist and cdist_interp == 'NN':
-        v, u = np.rint(v), np.rint(u)
+        v, u = np.rint(v).astype(np.int), np.rint(u).astype(np.int)
     elif with_cdist:
         raise NotImplementedError('cdist_interp ' +
                                   cdist_interp +
@@ -48,5 +54,4 @@ def gen_mapped_color(depth, dfx, dfy, dcx, dcy,
 
     mapped_color[valid_mask] = pc_color
 
-    return mapped_colors
-
+    return mapped_color
