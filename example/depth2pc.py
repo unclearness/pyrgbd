@@ -19,17 +19,17 @@ if __name__ == '__main__':
     pc, pc_color = pyrgbd.depth2pc(depth, fx, fy, cx, cy, color,
                                    keep_image_coord=False)
     end_t = time.time()
-    print('depth2pc', end_t - start_t)
+    print('depth2pc: {:.1f} ms'.format((end_t - start_t) * 1000.0))
 
     '''
     # slow implementation
     start_t = time.time()
     pc, pc_color = pyrgbd.depth2pc_naive(depth, fx, fy, cx, cy, color)
     end_t = time.time()
-    print('depth2pc_naive', end_t - start_t)
+    print('depth2pc_naive: {:.1f} ms'.format((end_t - start_t) * 1000.0))
     '''
 
-    start = time.time()
+    start_t = time.time()
     pyrgbd.util.write_pc_ply_txt('pc.ply', pc, pc_color)
-    end = time.time()
-    print('write_pc_ply_txt', end - start)
+    end_t = time.time()
+    print('write_pc_ply_txt: {:.1f} ms'.format((end_t - start_t) * 1000.0))
