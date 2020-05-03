@@ -36,6 +36,7 @@ def unproject(u, v, d, fx, fy, cx, cy, return_np=True):
         return [x, y, d]
 
 
+#TODO: faster version by tensor operation
 def depth2pc_naive(depth, fx, fy, cx, cy, color=None, ignore_zero=True, return_np=True,
                    distortion_type=None, distortion_param=[]):
     if depth.ndim != 2:
