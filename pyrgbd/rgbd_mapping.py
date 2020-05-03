@@ -12,6 +12,7 @@ def gen_mapped_color(depth, dfx, dfy, dcx, dcy,
                      missing_color=[0, 0, 0]):
     # point cloud in depth camera coordinate
     dpc, _ = pyrgbd.depth2pc(depth, dfx, dfy, dcx, dcy,
+                             keep_image_coord=True,
                              distortion_type=ddist_type,
                              distortion_param=ddist_param)
     valid_mask = dpc[..., 2] > 0

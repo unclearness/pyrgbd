@@ -15,7 +15,7 @@ def _undistort_pixel_opencv(u, v, fx, fy, cx, cy, k1, k2, p1, p2,
     kr = (1 + ((k3*r2 + k2)*r2 + k1)*r2)/(1 + ((k6*r2 + k5)*r2 + k4)*r2)
     u_ = fx*(u1 * kr + p1 * _2uv + p2 * (r2+2*u2)) + cx
     v_ = fy*(v1 * kr + p1 * (r2 + 2*v2) + p2 * _2uv) + cy
-    
+
     return u_, v_
 
 
@@ -89,7 +89,7 @@ def depth2pc_naive(depth, fx, fy, cx, cy, color=None, ignore_zero=True,
 
 
 def depth2pc(depth, fx, fy, cx, cy, color=None, ignore_zero=True,
-             keep_image_coord=True,
+             keep_image_coord=False,
              distortion_type=None, distortion_param=[],
              distortion_interp='NN'):
     if depth.ndim != 2:
