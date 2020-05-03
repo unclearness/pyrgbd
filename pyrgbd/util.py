@@ -2,8 +2,8 @@ import numpy as np
 
 
 # https://docs.opencv.org/4.3.0/d9/d0c/group__calib3d.html
-def undistort_pixel_opencv(u, v, fx, fy, cx, cy, k1, k2, p1, p2,
-                           k3=0.0, k4=0.0, k5=0.0, k6=0.0):
+def _undistort_pixel_opencv(u, v, fx, fy, cx, cy, k1, k2, p1, p2,
+                            k3=0.0, k4=0.0, k5=0.0, k6=0.0):
     u1 = u - cx
     v1 = v - cy
     u2 = u1 ** 2
@@ -21,26 +21,26 @@ def undistort_pixel_opencv(u, v, fx, fy, cx, cy, k1, k2, p1, p2,
 def undistort_pixel(u, v, fx, fy, cx, cy, distortion_type, distortion_param):
     if distortion_type == "OPENCV" and len(distortion_param) == 4:
         k1, k2, p1, p2 = distortion_param
-        return undistort_pixel_opencv(u, v, fx, fy, cx, cy, k1, k2, p1, p2)
+        return _undistort_pixel_opencv(u, v, fx, fy, cx, cy, k1, k2, p1, p2)
     raise NotImplementedError(
         distortion_type + " with param " + distortion_param
         + " is not implemented")
 
 
-def unproject(u, v, d, fx, fy, cx, cy, return_np=True):
+def unproject(u, v, d, fx, fy, cx, cy):
     x = (u - cx) * d / fx
     y = (v - cy) * d / fy
-    if type(x) in [float, np.float64, np.float32]:
-        # for scalar
-        if return_np:
-            return np.array([x, y, d])
-        else:
-            return [x, y, d]
-    elif type(x) is np.ndarray and x.dtype in [np.float64, np.float32]:
-        # for tensor
-        return np.stack([x, y, d], axis=-1)
-    else:
-        raise NotImplementedError(type(x))
+    # for scalar and tensor
+    return np.stack([x, y, d], axis=-1)
+
+
+def project(x, y, z, fx, fy, cx, cy, with_depth=True):
+    u = x * fx / z + cx
+    v = y * fy / z + cy
+    # for scalar and tensor
+    if with_depth:
+        return np.stack([u, v, z], axis=-1)
+    return np.stack([u, v], axis=-1)
 
 
 # TODO: faster version by tensor operation
@@ -61,7 +61,7 @@ def depth2pc_naive(depth, fx, fy, cx, cy, color=None, ignore_zero=True,
                 continue
             if with_distortion:
                 u, v = undistort_pixel(u, v, distortion_type, distortion_param)
-            p = unproject(u, v, d, fx, fy, cx, cy, True)
+            p = unproject(u, v, d, fx, fy, cx, cy)
             pc.append(p)
             if with_color:
                 # interpolation for float uv by undistort_pixel
@@ -105,7 +105,7 @@ def depth2pc(depth, fx, fy, cx, cy, color=None, ignore_zero=True,
     v = np.tile(np.arange(h), (w, 1)).T
     if with_distortion:
         u, v = undistort_pixel(u, v, distortion_type, distortion_param)
-    pc = unproject(u, v, depth, fx, fy, cx, cy, True)
+    pc = unproject(u, v, depth, fx, fy, cx, cy)
     pc[invalid_mask] = 0
 
     pc_color = None
@@ -132,7 +132,7 @@ def depth2pc(depth, fx, fy, cx, cy, color=None, ignore_zero=True,
     return pc[valid_mask], pc_color[valid_mask]
 
 
-def make_ply_txt(pc, color, normal):
+def _make_ply_txt(pc, color, normal):
     header_lines = ["ply", "format ascii 1.0",
                     "element vertex " + str(len(pc)),
                     "property float x", "property float y", "property float z"]
@@ -168,5 +168,5 @@ def make_ply_txt(pc, color, normal):
 
 def write_pc_ply_txt(path, pc, color=[], normal=[]):
     with open(path, 'w') as f:
-        txt = make_ply_txt(pc, color, normal)
+        txt = _make_ply_txt(pc, color, normal)
         f.write(txt)
