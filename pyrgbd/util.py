@@ -30,15 +30,19 @@ def undistort_pixel(u, v, fx, fy, cx, cy, distortion_type, distortion_param):
 def unproject(u, v, d, fx, fy, cx, cy, return_np=True):
     x = (u - cx) * d / fx
     y = (v - cy) * d / fy
-    if return_np:
-        return np.array([x, y, d])
+    if type(x) in [float, np.float64, np.float32]:
+        if return_np:
+            return np.array([x, y, d])
+        else:
+            return [x, y, d]
     else:
-        return [x, y, d]
+        # TODO: for tensor
+        raise NotImplementedError(type(x))
 
 
-#TODO: faster version by tensor operation
-def depth2pc_naive(depth, fx, fy, cx, cy, color=None, ignore_zero=True, return_np=True,
-                   distortion_type=None, distortion_param=[]):
+# TODO: faster version by tensor operation
+def depth2pc_naive(depth, fx, fy, cx, cy, color=None, ignore_zero=True,
+                   return_np=True, distortion_type=None, distortion_param=[]):
     if depth.ndim != 2:
         raise ValueError()
     with_color = color is not None
@@ -65,7 +69,8 @@ def depth2pc_naive(depth, fx, fy, cx, cy, color=None, ignore_zero=True, return_n
 
 
 def make_ply_txt(pc, color, normal):
-    header_lines = ["ply", "format ascii 1.0", "element vertex " + str(len(pc)),
+    header_lines = ["ply", "format ascii 1.0",
+                    "element vertex " + str(len(pc)),
                     "property float x", "property float y", "property float z"]
     has_normal = len(pc) == len(normal)
     has_color = len(pc) == len(color)
