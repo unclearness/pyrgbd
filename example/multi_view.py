@@ -2,6 +2,7 @@ import cv2
 import os
 import json
 import numpy as np
+import open3d as o3d
 import sys
 sys.path.append(os.path.abspath('.'))
 import pyrgbd
@@ -63,6 +64,12 @@ if __name__ == '__main__':
     KINECT_NUM = 10
     global_pc = []
     global_pc_color = []
+    
+    volume = o3d.integration.ScalableTSDFVolume(
+        voxel_length=4.0 / 512.0,
+        sdf_trunc=0.05,
+        color_type=o3d.integration.TSDFVolumeColorType.RGB8)
+
     for i in range(KINECT_NUM):
         param = parse_camera_params(kinect_params['sensors'][i])
         dfx, dfy, dcx, dcy = param['depth']['fx'], param['depth']['fy'], \
@@ -105,6 +112,28 @@ if __name__ == '__main__':
         global_pc += pc.tolist()
         global_pc_color += pc_color.tolist()
 
+        # BGR to RGB
+        # copy() for C-style memory allocation
+        mapped_color_rgb = mapped_color[..., [2, 1, 0]].copy()
+        o3d_color = o3d.geometry.Image(mapped_color_rgb)
+        # to float32
+        o3d_depth = o3d.geometry.Image(depth.astype(np.float32))
+        rgbd = o3d.geometry.RGBDImage.create_from_color_and_depth(
+            o3d_color, o3d_depth, depth_trunc=4.0, depth_scale=1.0,
+            convert_rgb_to_intensity=False)
+        h, w = depth.shape
+        volume.integrate(
+            rgbd,
+            o3d.camera.PinholeCameraIntrinsic(
+                o3d.camera.PinholeCameraIntrinsic(w, h, dfx, dfy, dcx, dcy)),
+            param['w2d_T'])
+
     global_pc = np.array(global_pc)
     global_pc_color = np.array(global_pc_color)
     pyrgbd.write_pc_ply_txt('pc_global.ply', global_pc, global_pc_color)
+
+    mesh = volume.extract_triangle_mesh()
+    mesh.compute_vertex_normals()
+    o3d.io.write_triangle_mesh("mesh_global_fusion.obj",
+                               mesh,
+                               write_triangle_uvs=True)
