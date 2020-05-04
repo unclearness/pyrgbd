@@ -1,5 +1,5 @@
 import numpy as np
-
+import cv2
 
 # https://docs.opencv.org/4.3.0/d9/d0c/group__calib3d.html
 def _undistort_pixel_opencv(u, v, fx, fy, cx, cy, k1, k2, p1, p2,
@@ -28,6 +28,52 @@ def undistort_pixel(u, v, fx, fy, cx, cy, distortion_type, distortion_param):
     raise NotImplementedError(
         distortion_type + " with param " + distortion_param
         + " is not implemented")
+
+
+def undistort_depth(depth, fx, fy, cx, cy, distortion_type, distortion_param):
+    # Undistortion for depth image
+    # cv2.undistort uses bilinar interpolation
+    # but it causes artifacts for boundary of depth image.
+    # Nearest Neighbor is preferred.
+    # This function provides NN like undistortion
+
+    undistorted = np.zeros_like(depth)
+    h, w = depth.shape
+    u = np.tile(np.arange(w), (h, 1))
+    v = np.tile(np.arange(h), (w, 1)).T
+    u, v = undistort_pixel(u, v, fx, fy, cx, cy,
+                           distortion_type, distortion_param)
+    v, u = np.rint(v).astype(np.int), np.rint(u).astype(np.int)
+
+    # Make valid mask
+    v_valid = np.logical_and(0 <= v, v < h)
+    u_valid = np.logical_and(0 <= u, u < w)
+    uv_valid = np.logical_and(u_valid, v_valid)
+    uv_invalid = np.logical_not(uv_valid)
+
+    # Fiil stub
+    v[v < 0] = 0
+    v[(h - 1) < v] = h - 1
+    u[u < 0] = 0
+    u[(w - 1) < u] = w - 1
+
+    # Copy depth value
+    # Similar to Nearest Neighbor
+    undistorted[v, u] = depth
+
+    # 0 for invalid
+    undistorted[uv_invalid] = 0
+
+    return undistorted
+
+
+def medianBlurForDepthWithNoHoleFilling(depth, ksize):
+    # cv2.medianBlur may fill invalid (0) for depth image
+    # This function prevents it
+    invalid_mask = depth == 0
+    depth = cv2.medianBlur(depth, ksize)
+    depth[invalid_mask] = 0
+    return depth
 
 
 def unproject(u, v, d, fx, fy, cx, cy):

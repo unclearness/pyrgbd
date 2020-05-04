@@ -20,6 +20,7 @@ def parse_camera_params(kinect):
     param['depth']['fy'] = kinect['K_depth'][1][1]
     param['depth']['cx'] = kinect['K_depth'][0][2]
     param['depth']['cy'] = kinect['K_depth'][1][2]
+    param['depth']['K'] = np.array(kinect['K_depth'])
     # ignore distCoeffs_depth's 5th (1000) and 6th (0) element
     # since they are strange
     param['depth']['distCoeffs'] = np.array(kinect['distCoeffs_depth'][:5])
@@ -29,6 +30,7 @@ def parse_camera_params(kinect):
     param['color']['fy'] = kinect['K_color'][1][1]
     param['color']['cx'] = kinect['K_color'][0][2]
     param['color']['cy'] = kinect['K_color'][1][2]
+    param['color']['K'] = np.array(kinect['K_color'])
     # ignore distCoeffs_color's 5th (1000) and 6th (0) element
     # since they are strange
     param['color']['distCoeffs'] = np.array(kinect['distCoeffs_color'][:5])
@@ -83,6 +85,9 @@ if __name__ == '__main__':
         depth = cv2.imread(os.path.join(
             data_dir, 'depth_{:05d}.png'.format(i)), -1)
         depth = depth.astype(np.float) / 1000.0  # convert to meter scale
+        depth = depth.astype(np.float32)  # to float32
+        # Median filter to remove noise
+        depth = pyrgbd.medianBlurForDepthWithNoHoleFilling(depth, 3)
         mapped_color, valid_mask = pyrgbd.gen_mapped_color(depth, dfx, dfy,
                                                            dcx, dcy,
                                                            color, cfx, cfy,
@@ -93,7 +98,20 @@ if __name__ == '__main__':
                                                            ddist_param=ddistpr,
                                                            cdist_type='OPENCV',
                                                            cdist_param=cdistpr)
-        # save mapped color
+        # Mask depth region where color picking failed
+        invalid_mask = np.logical_not(valid_mask)
+        depth[invalid_mask] = 0
+
+        # Undistortion because Open3D expects undistorted RGBD
+        mapped_color = cv2.undistort(mapped_color,
+                                     param['depth']['K'], ddistpr)
+        depth = pyrgbd.undistort_depth(depth, dfx, dfy, dcx, dcy,
+                                       'OPENCV', ddistpr)
+        # Median filter again after undisortion
+        # Since undistortion algorithm is not good
+        depth = pyrgbd.medianBlurForDepthWithNoHoleFilling(depth, 3)
+
+        # Save mapped color
         cv2.imwrite('mapped_{:05d}.png'.format(i), mapped_color)
         viz_depth = depth / 5.0
         viz_depth[viz_depth > 1.0] = 1.0
@@ -103,10 +121,6 @@ if __name__ == '__main__':
             cv2.addWeighted(mapped_color, 0.3, viz_depth, 0.7, 0)
         cv2.imwrite('mapped_with_depth_{:05d}.png'.format(i),
                     mapped_color_with_depth)
-
-        # Mask depth region where color picking failed
-        invalid_mask = np.logical_not(valid_mask)
-        depth[invalid_mask] = 0
 
         pc, pc_color = pyrgbd.depth2pc(
             depth, dfx, dfy, dcx, dcy, mapped_color, keep_image_coord=False)
@@ -124,10 +138,9 @@ if __name__ == '__main__':
         # BGR to RGB
         # copy() for C-style memory allocation after fancy indexing
         mapped_color_rgb = mapped_color[..., [2, 1, 0]].copy()
+
         o3d_color = o3d.geometry.Image(mapped_color_rgb)
-        # to float32
-        o3d_depth = o3d.geometry.Image(depth.astype(np.float32))
-        # TODO: Consider distortion
+        o3d_depth = o3d.geometry.Image(depth)
         rgbd = o3d.geometry.RGBDImage.create_from_color_and_depth(
             o3d_color, o3d_depth, depth_trunc=4.0, depth_scale=1.0,
             convert_rgb_to_intensity=False)
