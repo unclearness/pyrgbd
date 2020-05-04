@@ -76,20 +76,23 @@ if __name__ == '__main__':
             param['depth']['cx'], param['depth']['cy']
         cfx, cfy, ccx, ccy = param['color']['fx'], param['color']['fy'], \
             param['color']['cx'], param['color']['cy']
-        ddist_param = param['depth']['distCoeffs']
-        cdist_param = param['color']['distCoeffs']
+        ddistpr = param['depth']['distCoeffs']
+        cdistpr = param['color']['distCoeffs']
         color = cv2.imread(os.path.join(
             data_dir, 'color_{:05d}.png'.format(i)))
         depth = cv2.imread(os.path.join(
             data_dir, 'depth_{:05d}.png'.format(i)), -1)
         depth = depth.astype(np.float) / 1000.0  # convert to meter scale
-        mapped_color = pyrgbd.gen_mapped_color(depth, dfx, dfy, dcx, dcy,
-                                               color, cfx, cfy, ccx, ccy,
-                                               param['d2c_R'],  param['d2c_t'],
-                                               ddist_type='OPENCV',
-                                               ddist_param=ddist_param,
-                                               cdist_type='OPENCV',
-                                               cdist_param=cdist_param)
+        mapped_color, valid_mask = pyrgbd.gen_mapped_color(depth, dfx, dfy,
+                                                           dcx, dcy,
+                                                           color, cfx, cfy,
+                                                           ccx, ccy,
+                                                           param['d2c_R'],
+                                                           param['d2c_t'],
+                                                           ddist_type='OPENCV',
+                                                           ddist_param=ddistpr,
+                                                           cdist_type='OPENCV',
+                                                           cdist_param=cdistpr)
         # save mapped color
         cv2.imwrite('mapped_{:05d}.png'.format(i), mapped_color)
         viz_depth = depth / 5.0
@@ -101,11 +104,16 @@ if __name__ == '__main__':
         cv2.imwrite('mapped_with_depth_{:05d}.png'.format(i),
                     mapped_color_with_depth)
 
+        # Mask depth region where color picking failed
+        invalid_mask = np.logical_not(valid_mask)
+        depth[invalid_mask] = 0
+
         pc, pc_color = pyrgbd.depth2pc(
             depth, dfx, dfy, dcx, dcy, mapped_color, keep_image_coord=False)
         pc_color = pc_color[:, [2, 1, 0]]  # BGR to RGB
 
-        # Merge Multiple Kinects into world_kinect coordinate (1st Kinect's coordinate)
+        # Merge Multiple Kinects into
+        # world_kinect coordinate (1st Kinect's coordinate)
         # TODO: Merge Multiple Kinects into panoptic_kinect coordinate
         pc = (param['d2w_R'] @ pc.T).T + param['d2w_t']
 
