@@ -167,11 +167,26 @@ def depth2pc(depth, fx, fy, cx, cy, color=None, ignore_zero=True,
             raise NotImplementedError('distortion_interp ' +
                                       distortion_interp +
                                       ' is not implemented')
+
+        # 1) Make UV valid mask for color
+        v_valid = np.logical_and(0 <= v, v < h)
+        u_valid = np.logical_and(0 <= u, u < w)
+        uv_valid = np.logical_and(u_valid, v_valid)
+
+        # 2) Set stub value for outside of valid mask
         v[v < 0] = 0
         v[(h - 1) < v] = h - 1
         u[u < 0] = 0
         u[(w - 1) < u] = w - 1
         pc_color = color[v, u]
+
+        # 3) Update valid_mask and invalid_mask
+        # all_false = np.zeros([h, w], np.bool)
+        #print(valid_mask.shape, uv_invalid.shape)
+        # all_false[valid_mask] = uv_valid
+        valid_mask = np.logical_and(valid_mask, uv_valid)
+        invalid_mask = np.logical_not(valid_mask)
+
         pc_color[invalid_mask] = 0
 
     # return as organized point cloud keeping original image shape
