@@ -88,28 +88,28 @@ if __name__ == '__main__':
         depth = depth.astype(np.float32)  # to float32
         # Median filter to remove noise
         depth = pyrgbd.medianBlurForDepthWithNoHoleFilling(depth, 3)
+
+        # Undistortion first because
+        # 1) Open3D expects undistorted RGBD
+        # 2) Simple pipeline
+        color = cv2.undistort(color, param['color']['K'], cdistpr)
+        cv2.imwrite('undist_color_{:05d}.png'.format(i), color)
+        depth = pyrgbd.undistort_depth(depth, dfx, dfy, dcx, dcy,
+                                       'OPENCV', ddistpr)
+        # Median filter again after undisortion
+        # Since undistortion algorithm is not good
+        # depth = pyrgbd.medianBlurForDepthWithNoHoleFilling(depth, 3)
+
         mapped_color, valid_mask = pyrgbd.gen_mapped_color(depth, dfx, dfy,
                                                            dcx, dcy,
                                                            color, cfx, cfy,
                                                            ccx, ccy,
                                                            param['d2c_R'],
-                                                           param['d2c_t'],
-                                                           ddist_type='OPENCV',
-                                                           ddist_param=ddistpr,
-                                                           cdist_type='OPENCV',
-                                                           cdist_param=cdistpr)
+                                                           param['d2c_t'])
+
         # Mask depth region where color picking failed
         invalid_mask = np.logical_not(valid_mask)
         depth[invalid_mask] = 0
-
-        # Undistortion because Open3D expects undistorted RGBD
-        mapped_color = cv2.undistort(mapped_color,
-                                     param['depth']['K'], ddistpr)
-        depth = pyrgbd.undistort_depth(depth, dfx, dfy, dcx, dcy,
-                                       'OPENCV', ddistpr)
-        # Median filter again after undisortion
-        # Since undistortion algorithm is not good
-        depth = pyrgbd.medianBlurForDepthWithNoHoleFilling(depth, 3)
 
         # Save mapped color
         cv2.imwrite('mapped_{:05d}.png'.format(i), mapped_color)

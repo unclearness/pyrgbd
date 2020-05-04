@@ -32,7 +32,7 @@ def gen_mapped_color(depth, dfx, dfy, dcx, dcy,
                                       cdist_type, cdist_param)
 
     # Interpolation for float uv by undistort_pixel
-    if with_cdist and cdist_interp == 'NN':
+    if (with_cdist and cdist_interp == 'NN') or not with_cdist:
         v, u = np.rint(v).astype(np.int), np.rint(u).astype(np.int)
     elif with_cdist:
         raise NotImplementedError('cdist_interp ' +
