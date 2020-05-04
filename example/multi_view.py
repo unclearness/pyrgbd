@@ -86,6 +86,9 @@ if __name__ == '__main__':
             data_dir, 'depth_{:05d}.png'.format(i)), -1)
         depth = depth.astype(np.float) / 1000.0  # convert to meter scale
         depth = depth.astype(np.float32)  # to float32
+        vis_depth_org = pyrgbd.visualize_depth(depth, 0.0, 5.0, True)
+        cv2.imwrite('vis_depth_org_{:05d}.png'.format(i), vis_depth_org)
+
         # Median filter to remove noise
         depth = pyrgbd.medianBlurForDepthWithNoHoleFilling(depth, 3)
 
@@ -96,6 +99,8 @@ if __name__ == '__main__':
         cv2.imwrite('undist_color_{:05d}.png'.format(i), color)
         depth = pyrgbd.undistort_depth(depth, dfx, dfy, dcx, dcy,
                                        'OPENCV', ddistpr)
+        vis_depth = pyrgbd.visualize_depth(depth, 0.0, 5.0, True)
+        cv2.imwrite('vis_depth_undist_{:05d}.png'.format(i), vis_depth)
         # Median filter again after undisortion
         # Since undistortion algorithm is not good
         # depth = pyrgbd.medianBlurForDepthWithNoHoleFilling(depth, 3)
@@ -113,12 +118,10 @@ if __name__ == '__main__':
 
         # Save mapped color
         cv2.imwrite('mapped_{:05d}.png'.format(i), mapped_color)
-        viz_depth = depth / 5.0
-        viz_depth[viz_depth > 1.0] = 1.0
-        viz_depth = (viz_depth * 255).astype(np.uint8)
-        viz_depth = np.stack([viz_depth, viz_depth, viz_depth], axis=-1)
+        vis_depth = pyrgbd.visualize_depth(depth, 0.0, 5.0, True)
+        cv2.imwrite('vis_depth_{:05d}.png'.format(i), vis_depth)
         mapped_color_with_depth = \
-            cv2.addWeighted(mapped_color, 0.3, viz_depth, 0.7, 0)
+            cv2.addWeighted(mapped_color, 0.3, vis_depth, 0.7, 0)
         cv2.imwrite('mapped_with_depth_{:05d}.png'.format(i),
                     mapped_color_with_depth)
 

@@ -1,6 +1,7 @@
 import numpy as np
 import cv2
 
+
 # https://docs.opencv.org/4.3.0/d9/d0c/group__calib3d.html
 def _undistort_pixel_opencv(u, v, fx, fy, cx, cy, k1, k2, p1, p2,
                             k3=0.0, k4=0.0, k5=0.0, k6=0.0):
@@ -181,9 +182,6 @@ def depth2pc(depth, fx, fy, cx, cy, color=None, ignore_zero=True,
         pc_color = color[v, u]
 
         # 3) Update valid_mask and invalid_mask
-        # all_false = np.zeros([h, w], np.bool)
-        #print(valid_mask.shape, uv_invalid.shape)
-        # all_false[valid_mask] = uv_valid
         valid_mask = np.logical_and(valid_mask, uv_valid)
         invalid_mask = np.logical_not(valid_mask)
 
@@ -235,3 +233,13 @@ def write_pc_ply_txt(path, pc, color=[], normal=[]):
     with open(path, 'w') as f:
         txt = _make_ply_txt(pc, color, normal)
         f.write(txt)
+
+
+def visualize_depth(depth, mind, maxd, is_3channel=False):
+    viz_depth = (depth - mind) / (maxd - mind)
+    viz_depth[viz_depth > 1.0] = 1.0
+    viz_depth[viz_depth < 0] = 0
+    viz_depth = (viz_depth * 255).astype(np.uint8)
+    if is_3channel:
+        viz_depth = np.stack([viz_depth, viz_depth, viz_depth], axis=-1)
+    return viz_depth
