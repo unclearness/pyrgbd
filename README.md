@@ -19,7 +19,7 @@
 
 |RGB|Depth|RGB mapped on Depth|
 |---|---|---|
-|<img src=https://raw.githubusercontent.com/wiki/unclearness/pyrgbd/images/color_00000.png width=500>|<img src=https://raw.githubusercontent.com/wiki/unclearness/pyrgbd/images/vis_depth_org_00000.png width=500>|<img src=https://raw.githubusercontent.com/wiki/unclearness/pyrgbd/images/mapped_00000.png width=500>|
+|<img src=https://raw.githubusercontent.com/wiki/unclearness/pyrgbd/images/color_00000.png width=500>|<img src=https://raw.githubusercontent.com/wiki/unclearness/pyrgbd/images/vis_depth_undist_00000.png width=500>|<img src=https://raw.githubusercontent.com/wiki/unclearness/pyrgbd/images/mapped_00000.png width=500>|
 
 
 
