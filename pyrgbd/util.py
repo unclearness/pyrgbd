@@ -3,7 +3,7 @@ import cv2
 
 
 # https://docs.opencv.org/4.3.0/d9/d0c/group__calib3d.html
-def _undistort_pixel_opencv(u, v, fx, fy, cx, cy, k1, k2, p1, p2,
+def _distort_pixel_opencv(u, v, fx, fy, cx, cy, k1, k2, p1, p2,
                             k3=0.0, k4=0.0, k5=0.0, k6=0.0):
 
     u1 = (u - cx) / fx
@@ -17,6 +17,44 @@ def _undistort_pixel_opencv(u, v, fx, fy, cx, cy, k1, k2, p1, p2,
     kr = (1 + ((k3*r2 + k2)*r2 + k1)*r2)/(1 + ((k6*r2 + k5)*r2 + k4)*r2)
     u_ = fx*(u1 * kr + p1 * _2uv + p2 * (r2+2*u2)) + cx
     v_ = fy*(v1 * kr + p1 * (r2 + 2*v2) + p2 * _2uv) + cy
+
+    return u_, v_
+
+
+def distort_pixel(u, v, fx, fy, cx, cy, distortion_type, distortion_param):
+    if distortion_type == "OPENCV" and 4 <= len(distortion_param) <= 8:
+        # k1, k2, p1, p2 = distortion_param
+        return _undistort_pixel_opencv(u, v, fx, fy,
+                                       cx, cy, *tuple(distortion_param))
+    raise NotImplementedError(
+        distortion_type + " with param " + distortion_param
+        + " is not implemented")
+
+
+# https://docs.opencv.org/4.3.0/d9/d0c/group__calib3d.html
+def _undistort_pixel_opencv(u, v, fx, fy, cx, cy, k1, k2, p1, p2,
+                            k3=0.0, k4=0.0, k5=0.0, k6=0.0):
+    # https://github.com/egonSchiele/OpenCV/blob/master/modules/imgproc/src/undistort.cpp#L345
+    # https://github.com/opencv/opencv/blob/master/modules/calib3d/src/undistort.dispatch.cpp#L385
+    x0 = (u - cx) / fx
+    y0 = (v - cy) / fy
+    x = x0
+    y = y0
+    # Compensate distortion iteratively
+    # 5 is from OpenCV code.
+    # I don't know theoritical rationale why 5 is enough...
+    max_iter = 5
+    for j in range(max_iter):
+        r2 = x * x + y * y
+        icdist = (1 + ((k6 * r2 + k5) * r2 + k4) * r2) / \
+                        (1 + ((k3 * r2 + k2) * r2 + k1) * r2)
+        deltaX = 2 * p1 * x * y + p2 * (r2 + 2 * x * x)
+        deltaY = p1 * (r2 + 2 * y * y) + 2 * p2 * x * y
+        x = (x0 - deltaX) * icdist
+        y = (y0 - deltaY) * icdist
+
+    u_ = x * fx + cx
+    v_ = y * fy + cy
 
     return u_, v_
 
