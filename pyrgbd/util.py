@@ -24,7 +24,7 @@ def _distort_pixel_opencv(u, v, fx, fy, cx, cy, k1, k2, p1, p2,
 def distort_pixel(u, v, fx, fy, cx, cy, distortion_type, distortion_param):
     if distortion_type == "OPENCV" and 4 <= len(distortion_param) <= 8:
         # k1, k2, p1, p2 = distortion_param
-        return _undistort_pixel_opencv(u, v, fx, fy,
+        return _distort_pixel_opencv(u, v, fx, fy,
                                        cx, cy, *tuple(distortion_param))
     raise NotImplementedError(
         distortion_type + " with param " + distortion_param
@@ -84,11 +84,14 @@ def undistort_depth(depth, fx, fy, cx, cy, distortion_type, distortion_param):
                            distortion_type, distortion_param)
     v, u = np.rint(v).astype(np.int), np.rint(u).astype(np.int)
 
-    # Make valid mask
+    # Make valid mask for original depth image space
     v_valid = np.logical_and(0 <= v, v < h)
     u_valid = np.logical_and(0 <= u, u < w)
     uv_valid = np.logical_and(u_valid, v_valid)
     uv_invalid = np.logical_not(uv_valid)
+
+    # 0 for invalid
+    depth[uv_invalid] = 0
 
     # Fiil stub
     v[v < 0] = 0
@@ -99,9 +102,6 @@ def undistort_depth(depth, fx, fy, cx, cy, distortion_type, distortion_param):
     # Copy depth value
     # Similar to Nearest Neighbor
     undistorted[v, u] = depth
-
-    # 0 for invalid
-    undistorted[uv_invalid] = 0
 
     return undistorted
 
