@@ -33,7 +33,7 @@ def gen_mapped_color(depth, dfx, dfy, dcx, dcy,
 
     # Interpolation for float uv by undistort_pixel
     if (with_cdist and cdist_interp == 'NN') or not with_cdist:
-        v, u = np.rint(v).astype(np.int), np.rint(u).astype(np.int)
+        v, u = np.rint(v).astype(int), np.rint(u).astype(int)
     elif with_cdist:
         raise NotImplementedError('cdist_interp ' +
                                   cdist_interp +
@@ -66,7 +66,7 @@ def gen_mapped_color(depth, dfx, dfy, dcx, dcy,
 
     # Update valid_mask
     # Set False for region where projection to color was failed
-    all_false = np.zeros([dh, dw], np.bool)
+    all_false = np.zeros([dh, dw], bool)
     all_false[valid_mask] = uv_valid
     valid_mask = all_false
 

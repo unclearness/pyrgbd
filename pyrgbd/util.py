@@ -4,7 +4,7 @@ import cv2
 
 # https://docs.opencv.org/4.3.0/d9/d0c/group__calib3d.html
 def _distort_pixel_opencv(u, v, fx, fy, cx, cy, k1, k2, p1, p2,
-                            k3=0.0, k4=0.0, k5=0.0, k6=0.0):
+                          k3=0.0, k4=0.0, k5=0.0, k6=0.0):
 
     u1 = (u - cx) / fx
     v1 = (v - cy) / fy
@@ -25,7 +25,7 @@ def distort_pixel(u, v, fx, fy, cx, cy, distortion_type, distortion_param):
     if distortion_type == "OPENCV" and 4 <= len(distortion_param) <= 8:
         # k1, k2, p1, p2 = distortion_param
         return _distort_pixel_opencv(u, v, fx, fy,
-                                       cx, cy, *tuple(distortion_param))
+                                     cx, cy, *tuple(distortion_param))
     raise NotImplementedError(
         distortion_type + " with param " + distortion_param
         + " is not implemented")
@@ -47,7 +47,7 @@ def _undistort_pixel_opencv(u, v, fx, fy, cx, cy, k1, k2, p1, p2,
     for j in range(max_iter):
         r2 = x * x + y * y
         icdist = (1 + ((k6 * r2 + k5) * r2 + k4) * r2) / \
-                        (1 + ((k3 * r2 + k2) * r2 + k1) * r2)
+            (1 + ((k3 * r2 + k2) * r2 + k1) * r2)
         deltaX = 2 * p1 * x * y + p2 * (r2 + 2 * x * x)
         deltaY = p1 * (r2 + 2 * y * y) + 2 * p2 * x * y
         x = (x0 - deltaX) * icdist
@@ -82,7 +82,7 @@ def undistort_depth(depth, fx, fy, cx, cy, distortion_type, distortion_param):
     v = np.tile(np.arange(h), (w, 1)).T
     u, v = undistort_pixel(u, v, fx, fy, cx, cy,
                            distortion_type, distortion_param)
-    v, u = np.rint(v).astype(np.int), np.rint(u).astype(np.int)
+    v, u = np.rint(v).astype(int), np.rint(u).astype(int)
 
     # Make valid mask for original depth image space
     v_valid = np.logical_and(0 <= v, v < h)
